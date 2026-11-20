@@ -5,7 +5,7 @@
 ## 启动
 
 ```powershell
-cd outputs/auth-token-demo
+cd auth-token-demo
 node server.js
 ```
 
@@ -54,3 +54,4 @@ curl -i http://localhost:3000/api/profile \
 - 示例前端把访问令牌存在 JavaScript 内存，不写入 `localStorage` 或 URL；登出时清除内存副本。
 - JWT 是签名而非加密，令牌载荷可被读取，不要把密码或敏感数据放入载荷。
 - 这是教学示例：真实部署还需要数据库用户、密码哈希（如 Argon2id/bcrypt）、登录限流、HTTPS、密钥轮换和适当的会话撤销机制。
+
