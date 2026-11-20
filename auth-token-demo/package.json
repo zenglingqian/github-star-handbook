@@ -1,0 +1,8 @@
+{
+  "name": "auth-token-demo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Minimal Node.js login endpoint and bearer-token protected API demo",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>登录后携带令牌访问后端</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#172033;background:#f3f6fb}*{box-sizing:border-box}body{margin:0;padding:40px 18px}.card{max-width:760px;margin:auto;background:white;border:1px solid #dce4ef;border-radius:18px;padding:28px;box-shadow:0 12px 35px #23395d12}h1{margin:0 0 8px;font-size:28px}.muted{color:#64748b}.form{display:flex;gap:10px;flex-wrap:wrap;margin:20px 0}input,button{font:inherit;border-radius:9px;padding:11px 13px}input{border:1px solid #cbd5e1;flex:1;min-width:170px}button{border:0;background:#155eef;color:white;cursor:pointer}button.secondary{background:#e8eef8;color:#173b78}.row{display:flex;gap:10px;flex-wrap:wrap}.box{background:#f7f9fc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-top:14px;overflow-wrap:anywhere}.label{font-size:13px;font-weight:700;color:#475569}.value{font-family:ui-monospace,monospace;font-size:13px;margin-top:7px;white-space:pre-wrap}.token{max-height:94px;overflow:auto}.steps{padding-left:21px;color:#334155;line-height:1.8}.pill{display:inline-block;padding:4px 9px;border-radius:99px;background:#ecfdf3;color:#067647;font-size:13px}.bad{background:#fef3f2;color:#b42318}.hide{display:none}
+</style>
+</head>
+<body><main class="card">
+<h1>登录后携带令牌访问后端</h1><p class="muted">一个无第三方依赖的 Node.js 示例：登录端点签发短时 JWT，浏览器用 Bearer 令牌请求受保护接口。</p>
+<div class="box"><span class="label">演示账号</span><div class="value">用户名：demo　密码：demo1234</div></div>
+<form id="login" class="form"><input name="username" autocomplete="username" value="demo" aria-label="用户名"><input name="password" type="password" autocomplete="current-password" value="demo1234" aria-label="密码"><button>登录并获取令牌</button></form>
+<div class="row"><button id="profile" class="secondary" disabled>携带令牌读取个人资料</button><button id="logout" class="secondary" disabled>清除令牌</button><span id="status" class="pill">尚未登录</span></div>
+<div class="box"><div class="label">访问令牌（仅保存在当前页面内存中）</div><div id="token" class="value token">—</div></div>
+<div class="box"><div class="label">后端响应</div><div id="result" class="value">尚无请求</div></div>
+<div class="box"><div class="label">请求链路</div><ol class="steps"><li>浏览器 POST <code>/api/login</code>，发送用户名和密码。</li><li>服务器校验凭据并签发 15 分钟有效的 JWT。</li><li>页面把令牌暂存在内存中。</li><li>浏览器 GET <code>/api/profile</code>，在 <code>Authorization: Bearer &lt;token&gt;</code> 请求头里携带令牌。</li><li>服务器验证签名和有效期，再返回受保护数据。</li></ol></div>
+<p class="muted">演示用途：凭据和签名密钥由环境变量配置；默认账号及密钥只适合本地演示。生产环境需使用 HTTPS、持久化用户存储与安全的密码哈希，并通过密钥管理服务提供签名密钥。</p>
+</main>
+<script>
+let accessToken = null;
+const form = document.querySelector('#login');
+const statusEl = document.querySelector('#status');
+const tokenEl = document.querySelector('#token');
+const resultEl = document.querySelector('#result');
+const profileBtn = document.querySelector('#profile');
+const logoutBtn = document.querySelector('#logout');
+function showStatus(text, bad=false){statusEl.textContent=text;statusEl.classList.toggle('bad',bad)}
+form.addEventListener('submit', async event => {
+  event.preventDefault(); resultEl.textContent='正在登录…';
+  const fields = new FormData(form);
+  try {
+    const response = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({username:fields.get('username'),password:fields.get('password')})});
+    const data = await response.json();
+    if(!response.ok) throw new Error(data.error || '登录失败');
+    accessToken=data.access_token; tokenEl.textContent=accessToken; resultEl.textContent=JSON.stringify({token_type:data.token_type,expires_in:data.expires_in},null,2);
+    profileBtn.disabled=false;logoutBtn.disabled=false;showStatus('已登录');
+  } catch(error){accessToken=null;tokenEl.textContent='—';resultEl.textContent=error.message;showStatus('登录失败',true)}
+});
+profileBtn.addEventListener('click',async()=>{
+  resultEl.textContent='正在请求受保护接口…';
+  try {
+    const response=await fetch('/api/profile',{headers:{Authorization:`Bearer ${accessToken}`}});
+    const data=await response.json();if(!response.ok)throw new Error(data.error || '请求失败');
+    resultEl.textContent=JSON.stringify(data,null,2);
+  }catch(error){resultEl.textContent=error.message;showStatus('请求失败',true)}
+});
+logoutBtn.addEventListener('click',()=>{accessToken=null;tokenEl.textContent='—';resultEl.textContent='令牌已从页面内存清除';profileBtn.disabled=true;logoutBtn.disabled=true;showStatus('尚未登录')});
+</script></body></html>
